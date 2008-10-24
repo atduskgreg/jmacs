@@ -1,8 +1,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
   <head>
-    <script src="jquery-1.2.6.min.js"></script>
-    <script src="jquery.hotkeys.js"></script>
+    <script src="/javascripts/jquery-1.2.6.min.js"></script>
+    <script src="/javascripts/jquery.hotkeys.js"></script>
+    <script src="/javascripts/jmacs.js"></script>
     <script>
     
       // TODO: styling bug when horizonal split to the left of an existing vertical one
@@ -58,66 +59,7 @@
         
       }
       
-      jMacs = {
-        splitArea : function(area, vertical){
-          var newArea = $('<textarea class="edit"></textarea>');
-          area.after(newArea);
-          if(vertical){
-
-            var widthPercentage = Help.percentWidth(area);
-
-            var newWidth = widthPercentage / 2;
-            area.css('width', newWidth + '%');
-            newArea.css('width', (newWidth - 1) + '%');
-            newArea.css('height', Help.percentHeight(area) + '%');
-          } else {
-            var newHeight = Help.percentHeight(area) / 2;
-            console.log(newHeight);
-            area.css('height', newHeight + '%');
-            newArea.css('height', newHeight + '%');
-            console.log(Help.percentWidth(area))
-            newArea.css('width', Help.percentWidth(area) + '%');
-
-          }
-          
-          newArea.focus();
-          jMacs.currentArea = newArea;
-          return false;
-        },
-        executeCommand : function(command){
-          $("#control").attr('value', command);
-          if (command == 'split-vertical')
-            jMacs.splitArea(jMacs.currentArea, true);
-          if (command == 'split-horizontal')
-            jMacs.splitArea(jMacs.currentArea, false);
-          jMacs.bindEvents();
-        },
-        currentArea : null,
-        cycleCurrentArea : function(){
-
-          if(!jMacs.currentArea){
-            return $('.edit')[0];
-          } else {
-            var ordinal;
-	          for (var i = 0, l = $('.edit').length; i < l; i++) {
-	            if ($('.edit')[i] == jMacs.currentArea[0] ){
-	              ordinal = i;
-	            };
-	          };
-            // move to next or first
-	          var textAreaCount = $('.edit').length;
-	          if( ordinal + 1 >= textAreaCount )
-	            jMacs.currentArea = $($('.edit')[0]);
-	          else
-	            jMacs.currentArea = $($('.edit')[ordinal + 1]);
-          }
-        },
-        bindEvents : function(){
-          $('textarea').focus(function(e){
-            jMacs.currentArea = $(this);
-          });
-        }
-      }
+      
       
       $(function() {
         jMacs.bindEvents();
@@ -134,6 +76,7 @@
       height:100%;
       margin:0;
       padding:0;
+      overflow: hidden;
     }
 
     .edit {
