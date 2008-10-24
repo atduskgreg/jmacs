@@ -21,8 +21,8 @@
         //- undo history! (above and beyond browser?)
     
       $(document).bind('keydown', 'Ctrl+tab', function(e){
-        jMacs.cycleCurrentArea();
-        jMacs.currentArea.textarea.focus();
+        AreaManager.cycleCurrentArea();
+        AreaManager.currentArea.textarea.focus();
         return false; 
       });
       
@@ -31,13 +31,6 @@
         jMacs.currentArea.textarea.attr('value', jMacs.currentArea.textarea.attr('value') + '\t');
         return false; 
       });
-      
-      $(document).bind('keydown', 'Ctrl+v', function(e){
-        jMacs.executeCommand('split-vertical');
-      })
-      $(document).bind('keydown', 'Ctrl+h', function(e){
-        jMacs.executeCommand('split-horizontal');
-      })
       
       $(document).bind('keydown', 'return', function(e){
         if(jMacs.currentArea.textarea.hasClass('control'))
@@ -56,11 +49,8 @@
         percentWidth : function(e){
           console.log('w:' + Help.pixelWidth(e.css('width')));
           return (e.width() / e.parent().width()) * 100;
-        }
-        
+        } 
       }
-      
-      
       
       $(function() {
         jMacs.bindEvents();
@@ -125,7 +115,6 @@
 
     <form>
       <textarea id="control"></textarea>
-      <textarea class="edit"></textarea>
     </form>
     
   </body>

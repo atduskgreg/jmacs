@@ -62,7 +62,7 @@ var Area = function(textarea){
 	this.saveDocument = function(){
 		thisArea.document.content = thisArea.textarea.attr('value');
 		thisArea.document.save(function(){
-			jMacs.flash('saved ' + document.name);
+			jMacs.flash('saved ' + thisArea.document.path);
 		});
 	};
 }
@@ -84,15 +84,61 @@ var Command = function(name, hotkey, callback, arity){
 	jMacs.registerCommand(this);
 }
 
-
+AreaManager = {
+	openAreas : [],
+	currentArea : null,
+	splitArea : function(area, isVertical, dontMoveFocus){
+		var newArea = new Area($('<textarea class="edit"></textarea>'));
+		AreaManager.openAreas.push(newArea);
+		area.textarea.after(newArea.textarea);
+		
+		// resize areas
+		if(isVertical){
+	    var widthPercentage = Help.percentWidth(area.textarea);
+	    var newWidth = widthPercentage / 2;
+	    area.textarea.css('width', newWidth + '%');
+	    newArea.textarea.css('width', (newWidth - 1) + '%');
+	    newArea.textarea.css('height', Help.percentHeight(area.textarea) + '%');
+	  } else {
+	    var newHeight = Help.percentHeight(area.textarea) / 2;
+	    area.textarea.css('height', newHeight + '%');
+	    newArea.textarea.css('height', newHeight + '%');
+	    newArea.textarea.css('width', Help.percentWidth(area.textarea) + '%');
+	  }
+	
+		if (!dontMoveFocus){
+			AreaManager.currentArea = newArea;
+			AreaManager.currentArea.textarea.focus();
+		}
+	},
+	cycleCurrentArea : function(){
+		var currentAreaIndex = AreaManager.openAreas.indexOf(AreaManager.currentArea);
+		if (currentAreaIndex == (AreaManager.openAreas.length - 1))
+			AreaManager.currentArea = AreaManager.openAreas[0];
+		else
+			AreaManager.currentArea = AreaManager.openAreas[currentAreaIndex + 1];
+	},
+	// assuming there's only one...
+	findArea : function(textarea){
+		var match = null;
+		for (i = 0; i < AreaManager.openAreas.length; i++){
+			if (AreaManager.openAreas[i][0] == textarea[0])
+				match = AreaManager.openAreas[i];
+		}
+		
+		return match;
+	
+	}
+}
 
 
 jMacs = {
-	areas : [],
 	flash : function(message){
 		$('#control').attr('value', message);
 		setTimeout("$('#control').attr('value', '')", 1000);
 	},
+	// TODO: this should also do something so that the control line works directly
+	// instead of just through hotkeys
 	registerCommand : function(command){
 		$(document).bind('keydown', command.hotkey, function(e){
 			$("#control").attr('value', command.name);
@@ -118,31 +164,6 @@ jMacs = {
       return false; 
     });
 	},
-	splitArea : function(area, vertical){
-	  var newArea = $('<textarea class="edit"></textarea>');
-	  area.textarea.after(newArea);
-	  if(vertical){
-	
-	    var widthPercentage = Help.percentWidth(area.textarea);
-	
-	    var newWidth = widthPercentage / 2;
-	    area.textarea.css('width', newWidth + '%');
-	    newArea.css('width', (newWidth - 1) + '%');
-	    newArea.css('height', Help.percentHeight(area.textarea) + '%');
-	  } else {
-	    var newHeight = Help.percentHeight(area.textarea) / 2;
-	    console.log(newHeight);
-	    area.textarea.css('height', newHeight + '%');
-	    newArea.css('height', newHeight + '%');
-	    console.log(Help.percentWidth(area.textarea))
-	    newArea.css('width', Help.percentWidth(area.textarea) + '%');
-	
-	  }
-	  
-	  newArea.focus();
-	  jMacs.currentArea = new Area(newArea);
-	  return false;
-	},
 	executeCommand : function(command){
 	  $("#control").attr('value', command);
 	  if (command == 'split-vertical')
@@ -151,44 +172,42 @@ jMacs = {
 	    jMacs.splitArea(jMacs.currentArea, false);
 	  jMacs.bindEvents();
 	},
-	currentArea : null,
-	cycleCurrentArea : function(){
-	
-	  if(!jMacs.currentArea){
-	    return new Area($('.edit')[0] );
-	  } else {
-	    var ordinal;
-	    for (var i = 0, l = $('.edit').length; i < l; i++) {
-	      if ($('.edit')[i] == jMacs.currentArea.textarea[0] ){
-	        ordinal = i;
-	      };
-	    };
-	    // move to next or first
-	    var textAreaCount = $('.edit').length;
-	    if( ordinal + 1 >= textAreaCount )
-	      jMacs.currentArea = new Area( $($('.edit')[0]) );
-	    else
-	      jMacs.currentArea = new Area( $($('.edit')[ordinal + 1]) );
-	  }
-	},
 	bindEvents : function(){
 	  $('textarea').focus(function(e){
 			if($(this).attr('id') != "control")
-	    	jMacs.currentArea = new Area( $(this) ) ;
+	    	jMacs.currentArea = AreaManager.findArea( $(this) ) ;
 	  });
 	}
 }
 
+// ******** SETUP DEFAULT AREA*********
+$(function() {
+	a = new Area($("<textarea class='edit'></textarea"));
+	$("#control").after(a.textarea);
+	AreaManager.openAreas.push(a);
+	AreaManager.currentArea = a;
+	a.textarea.focus();
+});
+
+// ******* COMMANDS*************
+
+new Command('split-horizontal', 'Ctrl+h', function(){
+	AreaManager.splitArea(AreaManager.currentArea);
+	return false;
+});
+
+new Command('split-vertical', 'Ctrl+v', function(){
+	AreaManager.splitArea(AreaManager.currentArea, true);
+	return false;
+});
 
 new Command("open-file", 'Ctrl+f', function(args){
-	jMacs.currentArea.loadDocument( new Document(args[0]) ); 
-	console.log("open")
-	console.log(jMacs.currentArea)
-	jMacs.currentArea.textarea.focus();	
+	AreaManager.currentArea.loadDocument( new Document(args[0]) ); 
+	AreaManager.currentArea.textarea.focus();	
 	return false;
 }, 1);	
 
 new Command ("save-file", 'Ctrl+s', function(){
-	jMacs.currentArea.saveDocument();
+	AreaManager.currentArea.saveDocument();
 	return false;
 });
