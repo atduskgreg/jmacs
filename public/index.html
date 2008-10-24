@@ -8,30 +8,31 @@
     
       // TODO: styling bug when horizonal split to the left of an existing vertical one
         //- close existing areas
-        //- fade out command
+        //- save documents
+        //- use Areas for currentArea
+        //- use failure callback on loadDocument to give feedback
+        //- openAreas is a stack of Areas
+        //- display directories
         //- cycle through in both directions
         //- (more solid area modeling)
-        //- sever-side component (i.e. actual content in areas)
         //- better event management strategy
-        //- manage sizes of areas better
         //- find and replace (in project!)
         //- API wrapper for command line tools
         //- undo history! (above and beyond browser?)
     
       $(document).bind('keydown', 'Ctrl+tab', function(e){
         jMacs.cycleCurrentArea();
-        jMacs.currentArea.focus();
+        jMacs.currentArea.textarea.focus();
         return false; 
       });
       
       $(document).bind('keydown', 'tab', function(e){
         // we could use this to set tab sizes
-        jMacs.currentArea.attr('value', jMacs.currentArea.attr('value') + '\t');
+        jMacs.currentArea.textarea.attr('value', jMacs.currentArea.textarea.attr('value') + '\t');
         return false; 
       });
       
       $(document).bind('keydown', 'Ctrl+v', function(e){
-        console.log('split-vertical');
         jMacs.executeCommand('split-vertical');
       })
       $(document).bind('keydown', 'Ctrl+h', function(e){
@@ -39,8 +40,8 @@
       })
       
       $(document).bind('keydown', 'return', function(e){
-        if(jMacs.currentArea.hasClass('control'))
-          jMacs.executeCommand(jMacs.currentArea.attr('value'));
+        if(jMacs.currentArea.textarea.hasClass('control'))
+          jMacs.executeCommand(jMacs.currentArea.textarea.attr('value'));
         return true; 
 
       })

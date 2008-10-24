@@ -1,4 +1,6 @@
 class DocumentsController < ApplicationController
+  before_filter :load_document, :only => [:show, :update]
+  
   # GET /documents
   # GET /documents.xml
   def index
@@ -13,8 +15,6 @@ class DocumentsController < ApplicationController
   # GET /documents/1
   # GET /documents/1.xml
   def show
-    @document = Document.new :path => params[:id].gsub(/\\056/, "."), :pwd => params[:pwd]
-
     respond_to do |format|
       format.json  { render :json => "#{params[:callback]}(#{@document.to_json})" }
     end
@@ -39,7 +39,7 @@ class DocumentsController < ApplicationController
   # POST /documents
   # POST /documents.xml
   def create
-    @document = Document.new(params[:document])
+    @document = Document.new( params[:document] )
 
     respond_to do |format|
       if @document.save
@@ -56,17 +56,11 @@ class DocumentsController < ApplicationController
   # PUT /documents/1
   # PUT /documents/1.xml
   def update
-    @document = Document.find(params[:id])
+    @document.content = params[:content]
+    @document.save
 
     respond_to do |format|
-      if @document.update_attributes(params[:document])
-        flash[:notice] = 'Document was successfully updated.'
-        format.html { redirect_to(@document) }
-        format.xml  { head :ok }
-      else
-        format.html { render :action => "edit" }
-        format.xml  { render :xml => @document.errors, :status => :unprocessable_entity }
-      end
+      format.json  { render :json => "#{params[:callback]}(#{@document.to_json})" }
     end
   end
 
@@ -80,5 +74,9 @@ class DocumentsController < ApplicationController
       format.html { redirect_to(documents_url) }
       format.xml  { head :ok }
     end
+  end
+  
+  def load_document
+    @document = Document.new :path => params[:id].gsub(/\\056/, "."), :pwd => params[:pwd]
   end
 end

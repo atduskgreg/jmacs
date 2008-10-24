@@ -1,7 +1,6 @@
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
 describe "Document.new" do
-
   it "should accept a path" do
     d = Document.new( :path => "app/models/document.rb" )
     d.path.should == "app/models/document.rb"
@@ -24,4 +23,17 @@ describe "Document#resolve_path" do
     d.path.should == "/app/models/document.rb"
   end
   
+  it "should be hip to ~"
+end
+
+describe "Document#save" do
+  before do
+    @d = Document.new( :path => '/Users/greg/scratch_file' )
+  end
+  
+  it "should write the contents of the document to the file that lives at the path" do
+    @d.content = "foo"
+    @d.save
+    File.open(@d.path).read.should == "foo"
+  end
 end

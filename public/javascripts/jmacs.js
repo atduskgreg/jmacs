@@ -1,26 +1,70 @@
+function _ajax_request(url, data, callback, type, method) {
+	if (jQuery.isFunction(data)) {
+	    callback = data;
+	    data = {};
+	}
+	return jQuery.ajax({
+		type: method,
+		url: url,
+		data: data,
+		success: callback,
+		dataType: type
+	});
+}
+
+jQuery.extend({
+	put: function(url, data, callback, type) {
+		return _ajax_request(url, data, callback, type, 'PUT');
+	},
+	delete_: function(url, data, callback, type) {
+		return _ajax_request(url, data, callback, type, 'DELETE');
+	}
+});
+
 var Document = function(path, pwd) {
 	this.path = path;
 	this.pwd = pwd;
+	
 	var thisDoc = this;
+	
 	this.get = function(callback){
 		$.getJSON("http://localhost:9999/documents/"+ encodeURIComponent(this.path).replace(".", "\\056") +".json?pwd="+pwd+"&callback=?", function(data){
 			thisDoc.path = data.path;
 			thisDoc.content = data.content;
 			thisDoc.modified = data.modified;
-			callback(thisDoc);
+			if( callback )
+				callback(thisDoc);
 		})
-	}
+	};
+	
+	this.save = function(callback){
+		console.log("saving");
+		$.put("http://localhost:9999/documents/"+ encodeURIComponent(this.path).replace(".", "\\056")+"?callback=?", {content : thisDoc.content}, function(data){
+			callback(data);
+		}, "json");
+		
+	};
 };
 
 var Area = function(textarea){
 	this.textarea = textarea;
 	var thisArea = this;
+	
 	this.loadDocument = function(doc){
 		doc.get(function(){
 			thisArea.document = doc;
 			thisArea.textarea.attr('value', doc.content);
 		});
-	}
+	};
+	
+	// HERE: thisArea.document is not defined. we're calling new Area() too much!
+	// TODO: teach jMacs to manage areas as a stack of pointers between dom elements and Areas
+	this.saveDocument = function(){
+		thisArea.document.content = thisArea.textarea.attr('value');
+		thisArea.document.save(function(){
+			jMacs.flash('saved ' + document.name);
+		});
+	};
 }
 
 var Command = function(name, hotkey, callback, arity){
@@ -44,6 +88,11 @@ var Command = function(name, hotkey, callback, arity){
 
 
 jMacs = {
+	areas : [],
+	flash : function(message){
+		$('#control').attr('value', message);
+		setTimeout("$('#control').attr('value', '')", 1000);
+	},
 	registerCommand : function(command){
 		$(document).bind('keydown', command.hotkey, function(e){
 			$("#control").attr('value', command.name);
@@ -62,33 +111,36 @@ jMacs = {
  					return false; 
  				});
 				
+			} else {
+				command.invoke();
+ 				return false; 
 			};
       return false; 
     });
 	},
 	splitArea : function(area, vertical){
 	  var newArea = $('<textarea class="edit"></textarea>');
-	  area.after(newArea);
+	  area.textarea.after(newArea);
 	  if(vertical){
 	
-	    var widthPercentage = Help.percentWidth(area);
+	    var widthPercentage = Help.percentWidth(area.textarea);
 	
 	    var newWidth = widthPercentage / 2;
-	    area.css('width', newWidth + '%');
+	    area.textarea.css('width', newWidth + '%');
 	    newArea.css('width', (newWidth - 1) + '%');
-	    newArea.css('height', Help.percentHeight(area) + '%');
+	    newArea.css('height', Help.percentHeight(area.textarea) + '%');
 	  } else {
-	    var newHeight = Help.percentHeight(area) / 2;
+	    var newHeight = Help.percentHeight(area.textarea) / 2;
 	    console.log(newHeight);
-	    area.css('height', newHeight + '%');
+	    area.textarea.css('height', newHeight + '%');
 	    newArea.css('height', newHeight + '%');
-	    console.log(Help.percentWidth(area))
-	    newArea.css('width', Help.percentWidth(area) + '%');
+	    console.log(Help.percentWidth(area.textarea))
+	    newArea.css('width', Help.percentWidth(area.textarea) + '%');
 	
 	  }
 	  
 	  newArea.focus();
-	  jMacs.currentArea = newArea;
+	  jMacs.currentArea = new Area(newArea);
 	  return false;
 	},
 	executeCommand : function(command){
@@ -103,34 +155,40 @@ jMacs = {
 	cycleCurrentArea : function(){
 	
 	  if(!jMacs.currentArea){
-	    return $('.edit')[0];
+	    return new Area($('.edit')[0] );
 	  } else {
 	    var ordinal;
 	    for (var i = 0, l = $('.edit').length; i < l; i++) {
-	      if ($('.edit')[i] == jMacs.currentArea[0] ){
+	      if ($('.edit')[i] == jMacs.currentArea.textarea[0] ){
 	        ordinal = i;
 	      };
 	    };
 	    // move to next or first
 	    var textAreaCount = $('.edit').length;
 	    if( ordinal + 1 >= textAreaCount )
-	      jMacs.currentArea = $($('.edit')[0]);
+	      jMacs.currentArea = new Area( $($('.edit')[0]) );
 	    else
-	      jMacs.currentArea = $($('.edit')[ordinal + 1]);
+	      jMacs.currentArea = new Area( $($('.edit')[ordinal + 1]) );
 	  }
 	},
 	bindEvents : function(){
 	  $('textarea').focus(function(e){
 			if($(this).attr('id') != "control")
-	    	jMacs.currentArea = $(this);
+	    	jMacs.currentArea = new Area( $(this) ) ;
 	  });
 	}
 }
 
 
 new Command("open-file", 'Ctrl+f', function(args){
-	a = new Area( jMacs.currentArea );
-	a.loadDocument( new Document(args[0]) ); 
-	a.textarea.focus();	
+	jMacs.currentArea.loadDocument( new Document(args[0]) ); 
+	console.log("open")
+	console.log(jMacs.currentArea)
+	jMacs.currentArea.textarea.focus();	
 	return false;
-}, 1)
+}, 1);	
+
+new Command ("save-file", 'Ctrl+s', function(){
+	jMacs.currentArea.saveDocument();
+	return false;
+});
