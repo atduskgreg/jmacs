@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+  <head>
+    <script src="jquery-1.2.6.min.js"></script>
+    <script src="jquery.hotkeys.js"></script>
+    <script>
+    
+      // TODO: styling bug when horizonal split to the left of an existing vertical one
+        //- close existing areas
+        //- fade out command
+        //- cycle through in both directions
+        //- (more solid area modeling)
+        //- sever-side component (i.e. actual content in areas)
+        //- better event management strategy
+        //- manage sizes of areas better
+        //- find and replace (in project!)
+        //- API wrapper for command line tools
+        //- undo history! (above and beyond browser?)
+    
+      $(document).bind('keydown', 'Ctrl+tab', function(e){
+        jMacs.cycleCurrentArea();
+        jMacs.currentArea.focus();
+        return false; 
+      });
+      
+      $(document).bind('keydown', 'tab', function(e){
+        // we could use this to set tab sizes
+        jMacs.currentArea.attr('value', jMacs.currentArea.attr('value') + '\t');
+        return false; 
+      });
+      
+      $(document).bind('keydown', 'Ctrl+v', function(e){
+        console.log('split-vertical');
+        jMacs.executeCommand('split-vertical');
+      })
+      $(document).bind('keydown', 'Ctrl+h', function(e){
+        jMacs.executeCommand('split-horizontal');
+      })
+      
+      $(document).bind('keydown', 'return', function(e){
+        if(jMacs.currentArea.hasClass('control'))
+          jMacs.executeCommand(jMacs.currentArea.attr('value'));
+        return true; 
+
+      })
+      
+      Help = {
+        pixelWidth : function(n){
+          return parseInt(n.split('px')[0])
+        },
+        percentHeight : function(e){
+          return parseInt(( e.height() / e.parent().height() ) * 100);
+        },
+        percentWidth : function(e){
+          console.log('w:' + Help.pixelWidth(e.css('width')));
+          return (e.width() / e.parent().width()) * 100;
+        }
+        
+      }
+      
+      jMacs = {
+        splitArea : function(area, vertical){
+          var newArea = $('<textarea class="edit"></textarea>');
+          area.after(newArea);
+          if(vertical){
+
+            var widthPercentage = Help.percentWidth(area);
+
+            var newWidth = widthPercentage / 2;
+            area.css('width', newWidth + '%');
+            newArea.css('width', (newWidth - 1) + '%');
+            newArea.css('height', Help.percentHeight(area) + '%');
+          } else {
+            var newHeight = Help.percentHeight(area) / 2;
+            console.log(newHeight);
+            area.css('height', newHeight + '%');
+            newArea.css('height', newHeight + '%');
+            console.log(Help.percentWidth(area))
+            newArea.css('width', Help.percentWidth(area) + '%');
+
+          }
+          
+          newArea.focus();
+          jMacs.currentArea = newArea;
+          return false;
+        },
+        executeCommand : function(command){
+          $("#control").attr('value', command);
+          if (command == 'split-vertical')
+            jMacs.splitArea(jMacs.currentArea, true);
+          if (command == 'split-horizontal')
+            jMacs.splitArea(jMacs.currentArea, false);
+          jMacs.bindEvents();
+        },
+        currentArea : null,
+        cycleCurrentArea : function(){
+
+          if(!jMacs.currentArea){
+            return $('.edit')[0];
+          } else {
+            var ordinal;
+	          for (var i = 0, l = $('.edit').length; i < l; i++) {
+	            if ($('.edit')[i] == jMacs.currentArea[0] ){
+	              ordinal = i;
+	            };
+	          };
+            // move to next or first
+	          var textAreaCount = $('.edit').length;
+	          if( ordinal + 1 >= textAreaCount )
+	            jMacs.currentArea = $($('.edit')[0]);
+	          else
+	            jMacs.currentArea = $($('.edit')[ordinal + 1]);
+          }
+        },
+        bindEvents : function(){
+          $('textarea').focus(function(e){
+            jMacs.currentArea = $(this);
+          });
+        }
+      }
+      
+      $(function() {
+        jMacs.bindEvents();
+        $('.edit').focus();
+      });
+
+
+    </script>
+
+    <title></title>
+    <style type="text/css">
+    body, html{
+      width:100%;
+      height:100%;
+      margin:0;
+      padding:0;
+    }
+
+    .edit {
+      width: 100%;
+      margin:0;
+      padding:0;
+      float:left;
+      height: 97%;
+    }
+    
+    textarea.edit  {
+      border: none;
+      border-left: 3px solid #666;
+      border-bottom: 1px solid #666;
+      padding:1px;
+    }
+    
+    form {
+      margin:0;
+      padding:0;
+      height:100%;
+    }
+    
+    textarea {
+      width: 100%;
+      margin:0;
+      padding:0;
+      background-color: #000;
+      color: #fff;
+    }
+
+    #control {
+      border-top:2px solid #e33;
+      color: #aaa;
+      font-style: italic;
+      width: 100%;
+    }
+    
+    #control  {
+      height: 3%;
+    }
+    </style>
+  </head>
+  <body>
+
+    <form>
+      <textarea id="control"></textarea>
+      <textarea class="edit"></textarea>
+    </form>
+    
+  </body>
+</html>
