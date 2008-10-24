@@ -57,8 +57,6 @@ var Area = function(textarea){
 		});
 	};
 	
-	// HERE: thisArea.document is not defined. we're calling new Area() too much!
-	// TODO: teach jMacs to manage areas as a stack of pointers between dom elements and Areas
 	this.saveDocument = function(){
 		thisArea.document.content = thisArea.textarea.attr('value');
 		thisArea.document.save(function(){
@@ -73,12 +71,10 @@ var Command = function(name, hotkey, callback, arity){
 	this.callback = callback;
 	this.arity = arity;
 	
-	
 	var thisComand = this;
 	this.invoke = function(args){
 		thisComand.callback(args);
-		$("#control").attr('value', '');
-		$("#control").unbind('keydown', 'return')
+		$("#control").unbind('keydown', 'return');
 		return false;
 	};
 	jMacs.registerCommand(this);
@@ -89,6 +85,14 @@ AreaManager = {
 	currentArea : null,
 	splitArea : function(area, isVertical, dontMoveFocus){
 		var newArea = new Area($('<textarea class="edit"></textarea>'));
+		
+		
+		newArea.splitFrom = area;
+		newArea.splitFromPreviousDimensions = { 
+			width : Help.percentWidth(area.textarea), 
+			height : Help.percentHeight(area.textarea)
+		}
+				
 		AreaManager.openAreas.push(newArea);
 		area.textarea.after(newArea.textarea);
 		
@@ -117,17 +121,44 @@ AreaManager = {
 			AreaManager.currentArea = AreaManager.openAreas[0];
 		else
 			AreaManager.currentArea = AreaManager.openAreas[currentAreaIndex + 1];
+			
+		AreaManager.currentArea.textarea.focus();
 	},
 	// assuming there's only one...
 	findArea : function(textarea){
 		var match = null;
 		for (i = 0; i < AreaManager.openAreas.length; i++){
-			if (AreaManager.openAreas[i][0] == textarea[0])
+			if (AreaManager.openAreas[i].textarea[0] == textarea[0])
 				match = AreaManager.openAreas[i];
 		}
 		
-		return match;
+		return match;	
+	},
 	
+	// TODO: move Area (Document?) to a recently-closed stack
+	closeArea : function(area){
+	// what if the currentArea is the only one open?
+		if (AreaManager.openAreas.length == 1){
+			AreaManager.newFirstArea(); 
+		} else {
+			if (area.textarea[0] == AreaManager.currentArea.textarea[0])
+				AreaManager.cycleCurrentArea();
+    	
+			area.splitFrom.textarea.css('height', area.splitFromPreviousDimensions.height + '%');
+			area.splitFrom.textarea.css('width', area.splitFromPreviousDimensions.width + '%');
+		}
+		
+		AreaManager.openAreas.pop(area);
+		area.textarea.remove();
+		
+	
+	},
+	newFirstArea : function(){
+		 a = new Area($("<textarea class='edit'></textarea"));
+	   $("#control").after(a.textarea);
+	   AreaManager.openAreas.push(a);
+	   AreaManager.currentArea = a;
+	   a.textarea.focus();
 	}
 }
 
@@ -141,10 +172,9 @@ jMacs = {
 	// instead of just through hotkeys
 	registerCommand : function(command){
 		$(document).bind('keydown', command.hotkey, function(e){
-			$("#control").attr('value', command.name);
 			
     	if(command.arity){
-				$("#control").attr('value', $("#control").attr('value') + ' ');
+				$("#control").attr('value', command.name + ' ');
 				$("#control").focus();
         $("#control").bind('keydown', 'return', function (){
 	
@@ -153,41 +183,38 @@ jMacs = {
  					for (i = 1; i < terms.length; i ++){
  						args.push(terms[i]);
  					}
+					$("#control").attr('value', '');
 					command.invoke(args);
  					return false; 
  				});
 				
 			} else {
+				jMacs.flash(command.name);
 				command.invoke();
  				return false; 
 			};
       return false; 
     });
 	},
-	executeCommand : function(command){
-	  $("#control").attr('value', command);
-	  if (command == 'split-vertical')
-	    jMacs.splitArea(jMacs.currentArea, true);
-	  if (command == 'split-horizontal')
-	    jMacs.splitArea(jMacs.currentArea, false);
-	  jMacs.bindEvents();
-	},
+	// executeCommand : function(command){
+	// 	  $("#control").attr('value', command);
+	// 	  if (command == 'split-vertical')
+	// 	    jMacs.splitArea(jMacs.currentArea, true);
+	// 	  if (command == 'split-horizontal')
+	// 	    jMacs.splitArea(jMacs.currentArea, false);
+	// 	  jMacs.bindEvents();
+	// 	},
 	bindEvents : function(){
 	  $('textarea').focus(function(e){
-			if($(this).attr('id') != "control")
-	    	jMacs.currentArea = AreaManager.findArea( $(this) ) ;
+			if($(this).attr('id') != "control"){
+	    	console.log(AreaManager.findArea( $(this) ))
+				AreaManager.currentArea = AreaManager.findArea( $(this) ) ;
+			}
 	  });
 	}
 }
 
 // ******** SETUP DEFAULT AREA*********
-$(function() {
-	a = new Area($("<textarea class='edit'></textarea"));
-	$("#control").after(a.textarea);
-	AreaManager.openAreas.push(a);
-	AreaManager.currentArea = a;
-	a.textarea.focus();
-});
 
 // ******* COMMANDS*************
 
@@ -200,6 +227,11 @@ new Command('split-vertical', 'Ctrl+v', function(){
 	AreaManager.splitArea(AreaManager.currentArea, true);
 	return false;
 });
+
+new Command('close-area', 'Ctrl+w', function(){
+	AreaManager.closeArea(AreaManager.currentArea);
+	return false
+})
 
 new Command("open-file", 'Ctrl+f', function(args){
 	AreaManager.currentArea.loadDocument( new Document(args[0]) ); 

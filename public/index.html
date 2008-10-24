@@ -7,11 +7,7 @@
     <script>
     
       // TODO: styling bug when horizonal split to the left of an existing vertical one
-        //- close existing areas
-        //- save documents
-        //- use Areas for currentArea
         //- use failure callback on loadDocument to give feedback
-        //- openAreas is a stack of Areas
         //- display directories
         //- cycle through in both directions
         //- (more solid area modeling)
@@ -22,7 +18,6 @@
     
       $(document).bind('keydown', 'Ctrl+tab', function(e){
         AreaManager.cycleCurrentArea();
-        AreaManager.currentArea.textarea.focus();
         return false; 
       });
       
@@ -32,12 +27,11 @@
         return false; 
       });
       
-      $(document).bind('keydown', 'return', function(e){
-        if(jMacs.currentArea.textarea.hasClass('control'))
-          jMacs.executeCommand(jMacs.currentArea.textarea.attr('value'));
-        return true; 
-
-      })
+      // $(document).bind('keydown', 'return', function(e){
+      //         if(jMacs.currentArea.textarea.hasClass('control'))
+      //           jMacs.executeCommand(jMacs.currentArea.textarea.attr('value'));
+      //         return true; 
+      //       })
       
       Help = {
         pixelWidth : function(n){
@@ -47,14 +41,13 @@
           return parseInt(( e.height() / e.parent().height() ) * 100);
         },
         percentWidth : function(e){
-          console.log('w:' + Help.pixelWidth(e.css('width')));
           return (e.width() / e.parent().width()) * 100;
         } 
       }
       
       $(function() {
+	      AreaManager.newFirstArea();
         jMacs.bindEvents();
-        $('.edit').focus();
       });
 
 
