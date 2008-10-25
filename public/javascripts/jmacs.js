@@ -57,22 +57,40 @@ var Command = function(name, hotkey, callback, arity){
 	this.callback = callback;
 	this.arity = arity;
 	
-	var thisComand = this;
+	var thisCommand = this;
 	this.invoke = function(args){
-		thisComand.callback(args);
+		new CommandRecord(thisCommand, args);
+		thisCommand.callback(args);
 		// $("#control").unbind('keydown', 'return');
 		return false;
 	};
 	CommandManager.registerCommand(this);
 }
 
+var CommandRecord = function(command, args){
+	this.command = command;
+	this.args = args;
+	CommandManager.history.push(this)
+	CommandManager.historyPointer = null;
+	
+	var thisCommandRecord = this;
+	this.show = function(){
+		var result = thisCommandRecord.command.name
+		if (thisCommandRecord.args)
+		 result += ' ' + thisCommandRecord.args.join(' ');
+		return result
+	}
+}
+
 CommandManager = {
 	history : [],
-	catalog : [],
-	
+	catalog : {},
+	historyPointer : null,
+
 	// TODO: this should also do something so that the control line works directly
-	// instead of just through hotkeys
+	// instead of just through hotkeys (use jMacs.parsePrompt on current content of #control)
 	registerCommand : function(command){
+		CommandManager.catalog[command.name] = command;
 		$(document).bind('keydown', command.hotkey, function(e){
 			
     	if(command.arity){
@@ -91,6 +109,31 @@ CommandManager = {
 			};
       return false; 
     });
+	},
+	traverseHistory : function(moveIsForward){
+		if (CommandManager.history.length == 0){
+			return false;
+		} else {
+			if (CommandManager.historyPointer == null)
+				var currentHistoryIndex = CommandManager.history.length - 1;
+			else
+			 var currentHistoryIndex = CommandManager.historyPointer;
+			
+
+			if (moveIsForward){
+				if (currentHistoryIndex == CommandManager.history.length - 1)
+					CommandManager.historyPointer = 0
+				else
+					CommandManager.historyPointer = currentHistoryIndex + 1			
+			} else { // move backwards
+				if (currentHistoryIndex == 0)
+					// cycling through history as a ring
+					CommandManager.historyPointer = CommandManager.history.length - 1 
+				else
+					CommandManager.historyPointer = currentHistoryIndex - 1			
+			}
+			return CommandManager.history[ CommandManager.historyPointer ];
+		}
 	}
 }
 
@@ -209,6 +252,12 @@ jMacs = {
 		setTimeout("$('#control').attr('value', '')", 1500);
 	},
 	
+	ringBell : function(){
+		$('#control').css('background-color', '#0f0');
+		setTimeout("$('#control').css('background-color', '#000')", 100);
+
+	},
+	
 	parsePrompt : function (){
 		// separating the arguments from the prompt
 		// TODO: why don't we just use the promptText?
@@ -261,6 +310,23 @@ jMacs = {
 			jMacs.flash('error ('+request.status+'): '+ request.responseText);
 			return false;
  		});
+		$("#control").bind('keydown', 'Ctrl+up', function(e){
+			var cycledCommand = CommandManager.traverseHistory(false);
+			if (cycledCommand)
+				$('#control').attr('value', cycledCommand.show());
+			else
+				jMacs.ringBell();
+			return false;
+		});
+		$("#control").bind('keydown', 'Ctrl+down', function(e){
+			var cycledCommand = CommandManager.traverseHistory(true);
+			if (cycledCommand)
+				$('#control').attr('value', cycledCommand.show());
+			else
+				jMacs.ringBell();
+			return false;
+		});
+		
 	}
 }
 
