@@ -51,6 +51,49 @@ var Document = function(path, pwd) {
 	
 };
 
+var Command = function(name, hotkey, callback, arity){
+	this.name = name;
+	this.hotkey = hotkey;
+	this.callback = callback;
+	this.arity = arity;
+	
+	var thisComand = this;
+	this.invoke = function(args){
+		thisComand.callback(args);
+		// $("#control").unbind('keydown', 'return');
+		return false;
+	};
+	CommandManager.registerCommand(this);
+}
+
+CommandManager = {
+	history : [],
+	catalog : [],
+	
+	// TODO: this should also do something so that the control line works directly
+	// instead of just through hotkeys
+	registerCommand : function(command){
+		$(document).bind('keydown', command.hotkey, function(e){
+			
+    	if(command.arity){
+				jMacs.promptFor( command.name, function(response){
+					var args = [];
+ 					var terms = response.split(' ');
+
+					for (i = 0; i < terms.length; i ++){
+ 						args.push(terms[i]);
+ 					}					
+					command.invoke(args);
+				}); 				
+			} else {
+				// jMacs.flash(command.name);
+				command.invoke();
+			};
+      return false; 
+    });
+	}
+}
+
 var Area = function(textarea){
 	this.textarea = textarea;
 	var thisArea = this;
@@ -77,28 +120,13 @@ var Area = function(textarea){
 	}
 }
 
-var Command = function(name, hotkey, callback, arity){
-	this.name = name;
-	this.hotkey = hotkey;
-	this.callback = callback;
-	this.arity = arity;
-	
-	var thisComand = this;
-	this.invoke = function(args){
-		thisComand.callback(args);
-		// $("#control").unbind('keydown', 'return');
-		return false;
-	};
-	jMacs.registerCommand(this);
-}
-
 AreaManager = {
 	openAreas : [],
 	currentArea : null,
 	splitArea : function(area, isVertical, dontMoveFocus){
 		var newArea = new Area($('<textarea class="edit"></textarea>'));
 		
-		
+		// Linked list of Areas:
 		newArea.splitFrom = area;
 		newArea.splitFromPreviousDimensions = { 
 			width : Help.percentWidth(area.textarea), 
@@ -182,6 +210,8 @@ jMacs = {
 	},
 	
 	parsePrompt : function (){
+		// separating the arguments from the prompt
+		// TODO: why don't we just use the promptText?
 		prompt = $("#control").attr('value').split(' ')[0];
 		var cleanPromptText = prompt.replace(/\?/, '\\?')
 																		.replace(/\(/, '\\(')
@@ -204,35 +234,14 @@ jMacs = {
  	},
 
 	// NB: prompt text can't have spaces in it or parsePrompt chokes
+	// -> see notes in parsePrompt for potential fix
 	promptFor : function(promptText, callback){
 		jMacs.promptCallback = callback;
 		$("#control").attr('value', promptText + ' ');
 		$("#control").focus();
 		$("#control").bind('keydown', 'return', jMacs.parsePrompt);
-
 	},
-	// TODO: this should also do something so that the control line works directly
-	// instead of just through hotkeys
-	registerCommand : function(command){
-		$(document).bind('keydown', command.hotkey, function(e){
 
-    	if(command.arity){
-				jMacs.promptFor( command.name, function(response){
-					var args = [];
- 					var terms = response.split(' ');
-
-					for (i = 0; i < terms.length; i ++){
- 						args.push(terms[i]);
- 					}					
-					command.invoke(args);
-				}); 				
-			} else {
-				// jMacs.flash(command.name);
-				command.invoke();
-			};
-      return false; 
-    });
-	},
 	// executeCommand : function(command){
 	// 	  $("#control").attr('value', command);
 	// 	  if (command == 'split-vertical')
@@ -260,8 +269,7 @@ jMacs = {
 
 new Command('switch-area', 'Ctrl+tab', function(){
 	AreaManager.cycleCurrentArea();
-	if (AreaManager.currentArea.document)
-		jMacs.flash(AreaManager.currentArea.document.path);
+	jMacs.flash(AreaManager.currentArea.document ? AreaManager.currentArea.document.path : 'unattached area');
 	return false; 
 })
 
@@ -306,6 +314,7 @@ new Command ("new-file", 'Ctrl+n', function(args){
 	
 	AreaManager.currentArea.document = new Document(args[0]); 
 	AreaManager.currentArea.textarea.focus();
-	jMacs.flash("editing: " + AreaManager.currentArea.document.path);	
+	// This doesn't seem to work right now:
+	// jMacs.flash("editing: " + AreaManager.currentArea.document.path);	
 	return false;
 }, 1);
