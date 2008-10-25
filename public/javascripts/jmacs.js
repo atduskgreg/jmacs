@@ -58,7 +58,28 @@ var Command = function(name, hotkey, callback, arity){
 	this.arity = arity;
 	
 	var thisCommand = this;
-	this.invoke = function(args){
+	
+	this.parseArgsString = function(argsString){
+		if (typeof(argsString) == 'undefined'){
+			return [];
+		}
+		else {
+			var args = [];
+ 			var terms = argsString.split(' ');
+    	
+			for (i = 0; i < terms.length; i ++){
+ 				args.push(terms[i]);
+ 			}
+			return args;
+		}
+	
+	};
+	
+	this.invoke = function(argsString){
+		
+				console.log("argsString");
+
+		var args = thisCommand.parseArgsString(argsString);
 		new CommandRecord(thisCommand, args);
 		thisCommand.callback(args);
 		// $("#control").unbind('keydown', 'return');
@@ -94,15 +115,7 @@ CommandManager = {
 		$(document).bind('keydown', command.hotkey, function(e){
 			
     	if(command.arity){
-				jMacs.promptFor( command.name, function(response){
-					var args = [];
- 					var terms = response.split(' ');
-
-					for (i = 0; i < terms.length; i ++){
- 						args.push(terms[i]);
- 					}					
-					command.invoke(args);
-				}); 				
+				jMacs.promptFor( command ); 				
 			} else {
 				// jMacs.flash(command.name);
 				command.invoke();
@@ -220,7 +233,6 @@ AreaManager = {
 	
 	// TODO: move Area (Document?) to a recently-closed stack
 	closeArea : function(area){
-	// what if the currentArea is the only one open?
 		if (AreaManager.openAreas.length == 1){
 			AreaManager.newFirstArea(); 
 		} else {
@@ -258,37 +270,53 @@ jMacs = {
 
 	},
 	
-	parsePrompt : function (){
-		// separating the arguments from the prompt
-		// TODO: why don't we just use the promptText?
-		prompt = $("#control").attr('value').split(' ')[0];
+	getResponseFromPrompt : function(prompt){
 		var cleanPromptText = prompt.replace(/\?/, '\\?')
 																		.replace(/\(/, '\\(')
 																		.replace(/\)/, '\\)')
   
-  	console.log(prompt);
 
 		var promptRegexp = '^' + cleanPromptText + ' ';
 		var r = new RegExp(promptRegexp);
   
-		var response = $("#control").attr('value').replace(r, '');
-		
-  
-		// callback gets stuck as whichever one we call first
+		return $("#control").attr('value').replace(r, '');
+	},
+	
+	parsePrompt : function (){
+		if (jMacs.promptQuery){ // hotkey/query
+			var prompt = jMacs.promptQuery;
+			var response = jMacs.getResponseFromPrompt(prompt);
+		}
+		else{ // straight user entry
+			var prompt = $("#control").attr('value').split(' ')[0];
+			var response = jMacs.getResponseFromPrompt(prompt);
+			console.log(CommandManager.catalog[prompt]);
+
+			jMacs.promptCallback = CommandManager.catalog[prompt].invoke;
+		}
+		console.log(jMacs.promptCallback.name)
 		jMacs.promptCallback(response);
+
+		// reset #control and prompt stuff
 		$("#control").attr('value', '');
-		$("#control").unbind('keydown', 'return', jMacs.parsePrompt);
+		jMacs.promptCallback =  null;
+		jMacs.promptQuery = null;
+		// $("#control").unbind('keydown', 'return', jMacs.parsePrompt);
 
  		return false; 
  	},
 
-	// NB: prompt text can't have spaces in it or parsePrompt chokes
-	// -> see notes in parsePrompt for potential fix
-	promptFor : function(promptText, callback){
-		jMacs.promptCallback = callback;
-		$("#control").attr('value', promptText + ' ');
+	// prompter can be a Command
+	// or a string with a callback given as the second arg(i.e for new-file dialog)
+	promptFor : function(prompter, callback){
+		console.log(prompter);
+		jMacs.promptCallback = prompter.invoke || callback;		
+		jMacs.promptQuery = prompter.name || prompter;
+		
+		
+		$("#control").attr('value', jMacs.promptQuery + ' ');
 		$("#control").focus();
-		$("#control").bind('keydown', 'return', jMacs.parsePrompt);
+				
 	},
 
 	// executeCommand : function(command){
@@ -306,6 +334,8 @@ jMacs = {
 				AreaManager.currentArea = AreaManager.findArea( $(this) ) ;
 			}
 	  });
+		$("#control").bind('keydown', 'return', jMacs.parsePrompt);
+
  	 	$("#control").ajaxError(function(event, request, settings){
 			jMacs.flash('error ('+request.status+'): '+ request.responseText);
 			return false;
@@ -332,6 +362,11 @@ jMacs = {
 
 
 // ******* COMMANDS*************
+
+new Command('focus-control', 'Ctrl+x', function(){
+	$("#control").focus();
+	return false;
+})
 
 new Command('switch-area', 'Ctrl+tab', function(){
 	AreaManager.cycleCurrentArea();
