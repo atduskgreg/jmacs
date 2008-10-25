@@ -37,13 +37,18 @@ var Document = function(path, pwd) {
 		})
 	};
 	
-	this.save = function(callback){
-		console.log("saving");
+	this.update = function(callback){
 		$.put("http://localhost:9999/documents/"+ encodeURIComponent(this.path).replace(".", "\\056")+"?callback=?", {content : thisDoc.content}, function(data){
 			callback(data);
 		}, "json");
-		
 	};
+	
+	this.create = function(callback){
+		$.post("http://localhost:9999/documents?id="+ encodeURIComponent(this.path).replace(".", "\\056")+"&callback=?", {content : thisDoc.content}, function(data){
+			callback(data);
+		}, "json");	
+	}
+	
 };
 
 var Area = function(textarea){
@@ -59,10 +64,17 @@ var Area = function(textarea){
 	
 	this.saveDocument = function(){
 		thisArea.document.content = thisArea.textarea.attr('value');
-		thisArea.document.save(function(){
+		thisArea.document.update(function(){
 			jMacs.flash('saved ' + thisArea.document.path);
 		});
 	};
+	
+	this.createDocument = function(){
+		thisArea.document.content = thisArea.textarea.attr('value');
+		thisArea.document.create(function(){
+			jMacs.flash('created ' + thisArea.document.path);
+		})
+	}
 }
 
 var Command = function(name, hotkey, callback, arity){
@@ -168,30 +180,56 @@ jMacs = {
 		$('#control').attr('value', message);
 		setTimeout("$('#control').attr('value', '')", 1000);
 	},
+	
+	promptFor : function(promptText, callback){
+		$("#control").attr('value', promptText + ' ');
+		$("#control").focus();
+		$("#control").bind('keydown', 'return', function (){
+
+			prompt = $("#control").attr('value').split(' ')[0];
+			var cleanPromptText = prompt.replace(/\?/, '\\?')
+																			.replace(/\(/, '\\(')
+																			.replace(/\)/, '\\)')
+
+
+	  	var promptRegexp = '^' + cleanPromptText + ' ';
+			var r = new RegExp(promptRegexp);
+			
+			console.log("begin promptFor:");
+			console.log($("#control").attr('value'));
+			console.log(prompt);
+			console.log(r);
+
+			var response = $("#control").attr('value').replace(r, '');
+			
+			
+			console.log("response:");
+			console.log(response);
+
+			// callback gets stuck as whichever one we call first
+			callback(response);
+			$("#control").attr('value', '');
+ 			return false; 
+ 		});
+	},
 	// TODO: this should also do something so that the control line works directly
 	// instead of just through hotkeys
 	registerCommand : function(command){
 		$(document).bind('keydown', command.hotkey, function(e){
-			
+
     	if(command.arity){
-				$("#control").attr('value', command.name + ' ');
-				$("#control").focus();
-        $("#control").bind('keydown', 'return', function (){
-	
- 					var args = [];
- 					var terms = $("#control").attr('value').split(' ');
- 					for (i = 1; i < terms.length; i ++){
+				jMacs.promptFor( command.name, function(response){
+					var args = [];
+ 					var terms = response.split(' ');
+
+					for (i = 0; i < terms.length; i ++){
  						args.push(terms[i]);
- 					}
-					$("#control").attr('value', '');
+ 					}					
 					command.invoke(args);
- 					return false; 
- 				});
-				
+				}); 				
 			} else {
-				jMacs.flash(command.name);
+				// jMacs.flash(command.name);
 				command.invoke();
- 				return false; 
 			};
       return false; 
     });
@@ -214,9 +252,15 @@ jMacs = {
 	}
 }
 
-// ******** SETUP DEFAULT AREA*********
 
 // ******* COMMANDS*************
+
+new Command('switch-area', 'Ctrl+tab', function(){
+	AreaManager.cycleCurrentArea();
+	if (AreaManager.currentArea.document)
+		jMacs.flash(AreaManager.currentArea.document.path);
+	return false; 
+})
 
 new Command('split-horizontal', 'Ctrl+h', function(){
 	AreaManager.splitArea(AreaManager.currentArea);
@@ -233,13 +277,32 @@ new Command('close-area', 'Ctrl+w', function(){
 	return false
 })
 
-new Command("open-file", 'Ctrl+f', function(args){
+new Command("open-file", 'Ctrl+o', function(args){
+	console.log("open-file callback")
 	AreaManager.currentArea.loadDocument( new Document(args[0]) ); 
 	AreaManager.currentArea.textarea.focus();	
 	return false;
 }, 1);	
 
 new Command ("save-file", 'Ctrl+s', function(){
-	AreaManager.currentArea.saveDocument();
+	if (AreaManager.currentArea.document){
+		AreaManager.currentArea.saveDocument();
+	} else {
+		jMacs.promptFor("save file at (path):", function(response){
+			AreaManager.currentArea.document = new Document(response);
+			AreaManager.currentArea.createDocument();
+		})
+	}
 	return false;
 });
+
+new Command ("new-file", 'Ctrl+n', function(args){
+	console.log("entering new-file callback")
+	if (AreaManager.currentArea.document)
+			AreaManager.splitArea(AreaManager.currentArea, true);
+	
+	AreaManager.currentArea.document = new Document(args[0]); 
+	AreaManager.currentArea.textarea.focus();
+	jMacs.flash("editing: " + AreaManager.currentArea.document.path);	
+	return false;
+}, 1);

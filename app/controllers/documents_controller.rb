@@ -1,5 +1,5 @@
 class DocumentsController < ApplicationController
-  before_filter :load_document, :only => [:show, :update]
+  before_filter :load_document, :only => [:show, :update, :create]
   
   # GET /documents
   # GET /documents.xml
@@ -39,17 +39,11 @@ class DocumentsController < ApplicationController
   # POST /documents
   # POST /documents.xml
   def create
-    @document = Document.new( params[:document] )
+    @document.content = params[:content]
+    @document.save
 
     respond_to do |format|
-      if @document.save
-        flash[:notice] = 'Document was successfully created.'
-        format.html { redirect_to(@document) }
-        format.xml  { render :xml => @document, :status => :created, :location => @document }
-      else
-        format.html { render :action => "new" }
-        format.xml  { render :xml => @document.errors, :status => :unprocessable_entity }
-      end
+      format.json  { render :json => "#{params[:callback]}(#{@document.to_json})" }
     end
   end
 

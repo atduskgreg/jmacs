@@ -6,24 +6,19 @@
     <script src="/javascripts/jmacs.js"></script>
     <script>
     
-      // TODO: styling bug when horizonal split to the left of an existing vertical one
-        //- create a new file where previously none existed
-          //-> mode 1: from an existing area with no attached-document
-          //-> mode 2: as part of a command which also opens the unattached-area
+      // TODO: 
+        //- insidious multiple un-fulfilled commands bug
         //- use failure callback on loadDocument to give feedback
         //- display directories
+        //- styling bug when horizonal split to the left of an existing vertical one
         //- cycle through areas in both directions
-        //- if two areas references the same document, keep them in sync
+        //- if two areas references the same document, keep them in sync (after save)
         //- better event management strategy
         //- find and replace (in project!)
         //- API wrapper for command line tools
-        //- undo history! (above and beyond browser?)
+        //- command history!
     
-      $(document).bind('keydown', 'Ctrl+tab', function(e){
-        AreaManager.cycleCurrentArea();
-        return false; 
-      });
-      
+
       $(document).bind('keydown', 'tab', function(e){
         // we could use this to set tab sizes
         jMacs.currentArea.textarea.attr('value', jMacs.currentArea.textarea.attr('value') + '\t');
