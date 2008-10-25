@@ -86,7 +86,7 @@ var Command = function(name, hotkey, callback, arity){
 	var thisComand = this;
 	this.invoke = function(args){
 		thisComand.callback(args);
-		$("#control").unbind('keydown', 'return');
+		// $("#control").unbind('keydown', 'return');
 		return false;
 	};
 	jMacs.registerCommand(this);
@@ -178,39 +178,38 @@ AreaManager = {
 jMacs = {
 	flash : function(message){
 		$('#control').attr('value', message);
-		setTimeout("$('#control').attr('value', '')", 1000);
+		setTimeout("$('#control').attr('value', '')", 1500);
 	},
 	
+	parsePrompt : function (){
+		prompt = $("#control").attr('value').split(' ')[0];
+		var cleanPromptText = prompt.replace(/\?/, '\\?')
+																		.replace(/\(/, '\\(')
+																		.replace(/\)/, '\\)')
+  
+  	console.log(prompt);
+
+		var promptRegexp = '^' + cleanPromptText + ' ';
+		var r = new RegExp(promptRegexp);
+  
+		var response = $("#control").attr('value').replace(r, '');
+		
+  
+		// callback gets stuck as whichever one we call first
+		jMacs.promptCallback(response);
+		$("#control").attr('value', '');
+		$("#control").unbind('keydown', 'return', jMacs.parsePrompt);
+
+ 		return false; 
+ 	},
+
+	// NB: prompt text can't have spaces in it or parsePrompt chokes
 	promptFor : function(promptText, callback){
+		jMacs.promptCallback = callback;
 		$("#control").attr('value', promptText + ' ');
 		$("#control").focus();
-		$("#control").bind('keydown', 'return', function (){
+		$("#control").bind('keydown', 'return', jMacs.parsePrompt);
 
-			prompt = $("#control").attr('value').split(' ')[0];
-			var cleanPromptText = prompt.replace(/\?/, '\\?')
-																			.replace(/\(/, '\\(')
-																			.replace(/\)/, '\\)')
-
-
-	  	var promptRegexp = '^' + cleanPromptText + ' ';
-			var r = new RegExp(promptRegexp);
-			
-			console.log("begin promptFor:");
-			console.log($("#control").attr('value'));
-			console.log(prompt);
-			console.log(r);
-
-			var response = $("#control").attr('value').replace(r, '');
-			
-			
-			console.log("response:");
-			console.log(response);
-
-			// callback gets stuck as whichever one we call first
-			callback(response);
-			$("#control").attr('value', '');
- 			return false; 
- 		});
 	},
 	// TODO: this should also do something so that the control line works directly
 	// instead of just through hotkeys
@@ -249,6 +248,10 @@ jMacs = {
 				AreaManager.currentArea = AreaManager.findArea( $(this) ) ;
 			}
 	  });
+ 	 	$("#control").ajaxError(function(event, request, settings){
+			jMacs.flash('error ('+request.status+'): '+ request.responseText);
+			return false;
+ 		});
 	}
 }
 
@@ -278,7 +281,6 @@ new Command('close-area', 'Ctrl+w', function(){
 })
 
 new Command("open-file", 'Ctrl+o', function(args){
-	console.log("open-file callback")
 	AreaManager.currentArea.loadDocument( new Document(args[0]) ); 
 	AreaManager.currentArea.textarea.focus();	
 	return false;
@@ -288,16 +290,17 @@ new Command ("save-file", 'Ctrl+s', function(){
 	if (AreaManager.currentArea.document){
 		AreaManager.currentArea.saveDocument();
 	} else {
-		jMacs.promptFor("save file at (path):", function(response){
+		jMacs.promptFor("path:", function(response){
 			AreaManager.currentArea.document = new Document(response);
 			AreaManager.currentArea.createDocument();
 		})
 	}
+	
+	AreaManager.currentArea.textarea.focus();
 	return false;
 });
 
 new Command ("new-file", 'Ctrl+n', function(args){
-	console.log("entering new-file callback")
 	if (AreaManager.currentArea.document)
 			AreaManager.splitArea(AreaManager.currentArea, true);
 	

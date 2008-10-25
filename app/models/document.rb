@@ -1,4 +1,9 @@
 class Document
+  # class FileError < StandardError
+  #   def to_json
+  #   end
+  # end
+  
   attr_accessor :path, :pwd
   
   def initialize opts={}
