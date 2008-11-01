@@ -173,7 +173,7 @@ var Area = function(textarea){
 		thisArea.document.create(function(){
 			jMacs.flash('created ' + thisArea.document.path);
 		})
-	}
+	};
 }
 
 AreaManager = {
