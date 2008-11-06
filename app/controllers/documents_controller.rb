@@ -1,5 +1,5 @@
 class DocumentsController < ApplicationController
-  before_filter :load_document, :only => [:show, :update, :create]
+  before_filter :load_document, :only => [:show, :update, :create, :destroy]
   
   def show
     begin
@@ -37,12 +37,10 @@ class DocumentsController < ApplicationController
   # DELETE /documents/1
   # DELETE /documents/1.xml
   def destroy
-    @document = Document.find(params[:id])
     @document.destroy
 
     respond_to do |format|
-      format.html { redirect_to(documents_url) }
-      format.xml  { head :ok }
+      format.json  { render :json => "#{params[:callback]}({success: true})" }
     end
   end
   

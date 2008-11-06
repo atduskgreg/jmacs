@@ -47,7 +47,13 @@ var Document = function(path, pwd) {
 		$.post("http://localhost:9999/documents?id="+ encodeURIComponent(this.path).replace(".", "\\056")+"&callback=?", {content : thisDoc.content}, function(data){
 			callback(data);
 		}, "json");	
-	}
+	};
+	
+	this.destroy = function(callback){
+		$.delete_("http://localhost:9999/documents/"+ encodeURIComponent(this.path).replace(".", "\\056")+"?callback=?", {content : thisDoc.content}, function(data){
+			callback(data);
+		}, "json");	
+	};
 	
 };
 
@@ -415,3 +421,25 @@ new Command ("new-file", 'Ctrl+n', function(args){
 	// jMacs.flash("editing: " + AreaManager.currentArea.document.path);	
 	return false;
 }, 1);
+
+new Command("delete-file", 'Ctrl+d', function(){
+		if (AreaManager.currentArea.document){
+			AreaManager.currentArea.document.destroy(function(){
+				var p = AreaManager.currentArea.document.path;
+				AreaManager.closeArea(AreaManager.currentArea);
+				jMacs.flash('deleted ' + p);
+				return false;
+			});
+	} else {
+		jMacs.promptFor("delete-file", function(response){
+			var d = new Document(response);
+			d.destroy(function(){	
+				jMacs.flash('deleted ' + d.path);
+				AreaManager.currentArea.textarea.focus();
+				return false;
+			});
+		});
+	}
+	
+	return false;
+})

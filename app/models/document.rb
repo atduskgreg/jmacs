@@ -42,4 +42,8 @@ class Document
   def save
     File.open(@path, "w"){|f| f << content }
   end
+  
+  def destroy
+    File.delete(@path)
+  end
 end
