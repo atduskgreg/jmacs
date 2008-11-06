@@ -76,9 +76,6 @@ var Command = function(name, hotkey, callback, arity){
 	};
 	
 	this.invoke = function(argsString){
-		
-				console.log("argsString");
-
 		var args = thisCommand.parseArgsString(argsString);
 		new CommandRecord(thisCommand, args);
 		thisCommand.callback(args);
@@ -309,14 +306,12 @@ jMacs = {
 	// prompter can be a Command
 	// or a string with a callback given as the second arg(i.e for new-file dialog)
 	promptFor : function(prompter, callback){
-		console.log(prompter);
 		jMacs.promptCallback = prompter.invoke || callback;		
 		jMacs.promptQuery = prompter.name || prompter;
-		
-		
+
 		$("#control").attr('value', jMacs.promptQuery + ' ');
 		$("#control").focus();
-				
+		return false;
 	},
 
 	// executeCommand : function(command){
@@ -330,7 +325,7 @@ jMacs = {
 	bindEvents : function(){
 	  $('textarea').focus(function(e){
 			if($(this).attr('id') != "control"){
-	    	console.log(AreaManager.findArea( $(this) ))
+				console.log(AreaManager.findArea( $(this) ))
 				AreaManager.currentArea = AreaManager.findArea( $(this) ) ;
 			}
 	  });
@@ -402,10 +397,11 @@ new Command ("save-file", 'Ctrl+s', function(){
 		jMacs.promptFor("path:", function(response){
 			AreaManager.currentArea.document = new Document(response);
 			AreaManager.currentArea.createDocument();
-		})
+			AreaManager.currentArea.textarea.focus();
+			return false;
+		});
 	}
 	
-	AreaManager.currentArea.textarea.focus();
 	return false;
 });
 
