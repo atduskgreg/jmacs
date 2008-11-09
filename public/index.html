@@ -4,10 +4,12 @@
     
     <script src="/javascripts/jquery-1.2.6.min.js"></script>
     <script src="/javascripts/jquery.hotkeys.js"></script>
+    <script src="javascripts/jquery-fieldselection.pack.js"></script>
     <script src="/javascripts/jmacs.js"></script>
     <script>
       // NOTES/CREDITS:
         //- hotkey plugin http://code.google.com/p/js-hotkeys
+        //- fieldSelection plugin http://laboratorium.0xab.cd/jquery/fieldselection/0.2.3-test/test.html
     
       // TODO: 
         //- refactor "content" -> "contents" 
@@ -38,7 +40,28 @@
         },
         percentWidth : function(e){
           return (e.width() / e.parent().width()) * 100;
-        } 
+        },
+        getLine : function(string, position){
+          var back = "";
+          for(i=position; i < string.length; i++){
+            if(string[i] != "\n")
+              back += string[i];
+            else
+              break;
+          }
+        
+          var front=[];
+          for(x = position-1; x >= 0; x--){
+            console.log(x)
+            if(string[x] != "\n")
+              front.push(string[x]);
+            else
+              break;
+
+          } 
+          front.reverse()
+          return (front.join('') + back);
+        }
       }
       
       $(function() {

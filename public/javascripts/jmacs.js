@@ -175,7 +175,11 @@ var Area = function(textarea){
 	this.loadDirectory = function(dir){
 		dir.get(function(){
 			thisArea.directory = dir;
-			// HERE: use text area and bind enter? or list?
+			var res = [];
+			for (entry in dir.content){
+				res.push(dir.content[entry].path);
+			};
+			thisArea.textarea.attr('value', res.join('\n'));
 		})
 	}
 		
@@ -464,4 +468,19 @@ new Command("delete-file", 'Ctrl+d', function(){
 	}
 	
 	return false;
+});
+
+new Command('list-dir', 'Ctrl+l', function(args){
+	AreaManager.currentArea.loadDirectory(new Directory(args[0]));
+	AreaManager.currentArea.textarea.focus();
+}, 1);
+
+new Command('list-highlighted-dir', 'Ctrl+return', function(){
+	var path = Help.getLine(AreaManager.currentArea.textarea.attr('value'),
+		AreaManager.currentArea.textarea.getSelection().start
+	);
+	
+	AreaManager.currentArea.loadDirectory(new Directory(path));
+	AreaManager.currentArea.textarea.focus();
+	
 })
