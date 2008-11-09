@@ -5,7 +5,7 @@ class DocumentsController < ApplicationController
     begin
       @document.to_json
     rescue Exception => e
-      @error =e.message
+      @error = e.message
     end
     respond_to do |format|
       unless @error
