@@ -57,6 +57,21 @@ var Document = function(path, pwd) {
 	
 };
 
+var Directory = function(path, pwd) {
+	this.path = path;
+	this.pwd = pwd;
+	
+	var thisDir = this;
+	this.get = function(callback){
+		$.getJSON("http://localhost:9999/directories/"+ encodeURIComponent(this.path).replace(".", "\\056") +".json?pwd="+pwd+"&callback=?", function(data){
+			thisDir.path = data.path;
+			thisDir.content = data.content;
+			if( callback )
+				callback(thisDir);
+		})
+	};
+}
+
 var Command = function(name, hotkey, callback, arity){
 	this.name = name;
 	this.hotkey = hotkey;
@@ -157,6 +172,13 @@ var Area = function(textarea){
 	this.textarea = textarea;
 	var thisArea = this;
 	
+	this.loadDirectory = function(dir){
+		dir.get(function(){
+			thisArea.directory = dir;
+			// HERE: use text area and bind enter? or list?
+		})
+	}
+		
 	this.loadDocument = function(doc){
 		doc.get(function(){
 			thisArea.document = doc;
