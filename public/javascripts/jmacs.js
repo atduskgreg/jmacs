@@ -483,4 +483,16 @@ new Command('list-highlighted-dir', 'Ctrl+return', function(){
 	AreaManager.currentArea.loadDirectory(new Directory(path));
 	AreaManager.currentArea.textarea.focus();
 	
+});
+
+new Command('list-commands', 'Ctrl+x', function(){
+	var result = "";
+	for(command in CommandManager.catalog){
+    result += '[' + CommandManager.catalog[command].hotkey + ']\t\t' +command + '\n'
+	}
+	
+	AreaManager.currentArea.textarea.attr('value', result);
+	jMacs.flash('All registered Commands');
+
 })
+
