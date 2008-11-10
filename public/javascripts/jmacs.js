@@ -502,7 +502,7 @@ new Command('list-highlighted-dir', 'Ctrl+return', function(){
 	AreaManager.currentArea.textarea.focus();	
 });
 
-new Command('list-commands', 'Ctrl+x', function(){
+new Command('list-commands', 'Ctrl+c', function(){
 	var result = "";
 	for(command in CommandManager.catalog){
     result += '[' + CommandManager.catalog[command].hotkey + ']\t\t' +command + '\n'
