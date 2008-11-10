@@ -480,9 +480,26 @@ new Command('list-highlighted-dir', 'Ctrl+return', function(){
 		AreaManager.currentArea.textarea.getSelection().start
 	);
 	
-	AreaManager.currentArea.loadDirectory(new Directory(path));
-	AreaManager.currentArea.textarea.focus();
 	
+
+	if (AreaManager.currentArea.directory){
+		var selectedPathIsFile = false;
+		for(entry in AreaManager.currentArea.directory.content){
+			if(AreaManager.currentArea.directory.content[entry].path == path){
+				selectedPathIsFile = AreaManager.currentArea.directory.content[entry].isFile;
+				break;
+			}
+		};
+		if(selectedPathIsFile){
+			AreaManager.currentArea.loadDocument(new Document(path));
+		}
+		else{
+			AreaManager.currentArea.loadDirectory(new Directory(path));
+		}
+	} else {
+		AreaManager.currentArea.loadDirectory(new Directory(path));
+	}
+	AreaManager.currentArea.textarea.focus();	
 });
 
 new Command('list-commands', 'Ctrl+x', function(){
