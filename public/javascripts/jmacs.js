@@ -180,6 +180,7 @@ var Area = function(textarea){
 				res.push(dir.content[entry].path);
 			};
 			thisArea.textarea.attr('value', res.join('\n'));
+			AreaManager.recentDocsAndDirs.push(dir);
 		})
 	}
 		
@@ -187,6 +188,8 @@ var Area = function(textarea){
 		doc.get(function(){
 			thisArea.document = doc;
 			thisArea.textarea.attr('value', doc.content);
+			AreaManager.recentDocsAndDirs.push(doc);
+
 		});
 	};
 	
@@ -207,6 +210,7 @@ var Area = function(textarea){
 
 AreaManager = {
 	openAreas : [],
+	recentDocsAndDirs : [],
 	currentArea : null,
 	splitArea : function(area, isVertical, dontMoveFocus){
 		var newArea = new Area($('<textarea class="edit"></textarea>'));
@@ -479,8 +483,6 @@ new Command('list-highlighted-dir', 'Ctrl+return', function(){
 	var path = Help.getLine(AreaManager.currentArea.textarea.attr('value'),
 		AreaManager.currentArea.textarea.getSelection().start
 	);
-	
-	
 
 	if (AreaManager.currentArea.directory){
 		var selectedPathIsFile = false;
@@ -509,7 +511,15 @@ new Command('list-commands', 'Ctrl+c', function(){
 	}
 	
 	AreaManager.currentArea.textarea.attr('value', result);
-	jMacs.flash('All registered Commands');
+	jMacs.flash('list-commands');
 
 })
 
+new Command('list-recent', 'Ctrl+r', function(){
+	var result = [];
+	for(entry in AreaManager.recentDocsAndDirs){
+		result.push(AreaManager.recentDocsAndDirs[entry].path)
+	}
+	AreaManager.currentArea.textarea.attr('value', result.join('\n'));
+	jMacs.flash('list-recent');
+})
