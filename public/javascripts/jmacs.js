@@ -521,5 +521,6 @@ new Command('list-recent', 'Ctrl+r', function(){
 		result.push(AreaManager.recentDocsAndDirs[entry].path)
 	}
 	AreaManager.currentArea.textarea.attr('value', result.join('\n'));
+	AreaManager.currentArea.textarea.focus();
 	jMacs.flash('list-recent');
 })
