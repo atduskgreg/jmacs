@@ -2,11 +2,12 @@ require "rubygems"
 require 'sinatra'
 require 'json'
 
-MODEL_ROOT = "/Users/greg/code/jmacs/app/models" unless defined? MODEL_ROOT
+APP_ROOT = File.expand_path(File.dirname(__FILE__)) unless defined? APP_ROOT
 
-require "#{MODEL_ROOT}/init_from_path.rb"
-require "#{MODEL_ROOT}/document.rb"
-require "#{MODEL_ROOT}/directory.rb"
+
+require "#{APP_ROOT}/models/init_from_path.rb"
+require "#{APP_ROOT}/models/document.rb"
+require "#{APP_ROOT}/models/directory.rb"
 
 helpers do
   def save_document( params )
@@ -35,11 +36,11 @@ helpers do
 end
 
 get '/' do
-  open("/Users/greg/code/jmacs/public/index.html").read
+  open("#{APP_ROOT}/public/index.html").read
 end
 
 get '/javascripts/*' do
-  open("/Users/greg/code/jmacs/public/javascripts/#{params['splat']}").read
+  open("#{APP_ROOT}/public/javascripts/#{params['splat']}").read
 end
 
 get '/documents/:id.json' do
@@ -58,4 +59,13 @@ delete '/documents/:id' do
   document = load_document( params )
   document.destroy
   "#{params[:callback]}({success: true})"
+end
+
+get '/directories/:id.json' do
+  begin 
+    dir = Directory.new :path => params[:id].gsub(/\\056/, "."), :pwd => params[:pwd]
+    "#{params[:callback]}(#{dir.to_json})"
+  rescue Exception => e
+    error e.message
+  end
 end
