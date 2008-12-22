@@ -1,0 +1,13 @@
+[Ctrl+x]		focus-control
+[Ctrl+tab]		switch-area
+[Ctrl+h]		split-horizontal
+[Ctrl+v]		split-vertical
+[Ctrl+w]		close-area
+[Ctrl+o]		open-file
+[Ctrl+s]		save-file
+[Ctrl+n]		new-file
+[Ctrl+d]		delete-file
+[Ctrl+l]		list-dir
+[Ctrl+return]		list-highlighted-dir
+[Ctrl+c]		list-commands
+[Ctrl+r]		list-recent
